@@ -90,6 +90,16 @@ SET_TZIC:
     @instrucao msr - habilita interrupcoes
     msr  CPSR_c, #0x13       @ SUPERVISOR mode, IRQ/FIQ enabled
 
+SET_GPIO:
+		.set GPIO_BASE, 0x53F84000 @ DR
+		.set GPIO_GDIR, 0x4
+		.set GPIO_PSER, 0x8
+
+
+		mov r0, #0b11111111111111000000000000111110 @Setando Gdir
+		ldr r1, =GPIO_BASE
+		str r0, [r1, #GPIO_GDIR]
+
 laco:
     b laco
 
