@@ -100,6 +100,7 @@ SET_GPIO:
 		ldr r1, =GPIO_BASE
 		str r0, [r1, #GPIO_GDIR]
 
+
 laco:
     b laco
 
