@@ -135,9 +135,25 @@ get_time:
 
 set_time:
 	
+	mrs r0, CSPR
+	orr r0, r0, #0b11111
+	msr CPSR, r0							
 	
+	mov r0, sp
+ 
 
-	
+	mrs r0, CSPR
+	and r0, r0, #0b11111111111111111111111111110011
+	msr CPSR, r0
+
+	push {r1}
+	ldmdb r0, {r1}
+
+	mov r0, r1
+
+
+
+	pop {r1}
 	
 	
 	
