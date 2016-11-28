@@ -90,6 +90,19 @@ SET_TZIC:
     @instrucao msr - habilita interrupcoes
     msr  CPSR_c, #0x13       @ SUPERVISOR mode, IRQ/FIQ enabled
 
+SET_GPIO:
+		.set GPIO_BASE, 0x53F84000 @ DR
+		.set GPIO_GDIR, 0x4
+		.set GPIO_PSER, 0x8
+
+
+		mov r0, #0b11111111111111100000000000111110 @Setando Gdir
+		ldr r1, =GPIO_BASE
+		str r0, [r1, #GPIO_GDIR]
+
+		@Setar valor inicial do trigger e dos motor_write no dr
+
+
 laco:
     b laco
 
@@ -106,6 +119,57 @@ IRQ_HANDLER:
 
 		sub lr, lr, #4
 		movs pc, lr
+
+@id em r0
+read_sonar_with_id:
+		ldr r1, =GPIO_BASE
+		ldr r2, [r1]
+
+		@Mascara para escrever o id do sonar no DR, no lugar certo
+		mov r0, r0, lsl #2
+		and r2, r2, #0b11111111111111111111111111000001
+		add r0, r0, #2 @Acionando o trigger
+		orr r2, r2, r0
+
+		str r2, [r1]
+
+		@Espera o valor da flag do DR ser 1
+		wait_for_flag:
+			ldr r0, [r1]
+			and r2, r0, #1
+			cmp r2, #0
+			beq wait_for_flag
+
+		and r0, r0, #0b00000000000000011111111111000000 @Mascara para a leitura do sonar
+		mov r0, r0, lsr #6
+		mov pc, lr
+
+@velocidade em r0
+write_motor_0:
+		ldr r1, =GPIO_BASE
+		ldr r2, [r1]
+
+		@Mascara para escrever o id do sonar no DR, no lugar certo
+		mov r0, r0, lsl #19
+		and r2, r2, #0b11111110000000111111111111111111
+		orr r2, r2, r0
+		str r2, [r1]
+
+		mov pc, lr
+
+write_motor_1:
+		ldr r1, =GPIO_BASE
+		ldr r2, [r1]
+
+		@Mascara para escrever o id do sonar no DR, no lugar certo
+		mov r0, r0, lsl #26
+		and r2, r2, #0b00000001111111111111111111111111
+		orr r2, r2, r0
+		str r2, [r1]
+
+		mov pc, lr
+
+
 
 
 .data
