@@ -236,10 +236,10 @@ register_proximity_callback:
 	mul r3, r3, #4			@posicao correta do sonar
 	str r0, [r4, r3]
 
-	ldr r4, =CALLBACK_THRESHOLD_BASE	@guarda as limiares de cada callback
+	ldr r4, =CALLBACKS_THRESHOLD_BASE	@guarda as limiares de cada callback
 	str r1, [r4, r3]
 
-	ldr r4, =CALLBACK_FUNCTION_BASE	@guarda as limiares de cada callback
+	ldr r4, =CALLBACKS_FUNCTION_BASE	@guarda as limiares de cada callback
 	str r2, [r4, r3]
 
 	ldr r3, =CALLBACKS		@incrementa o valor em CALLBACKS
