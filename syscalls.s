@@ -113,14 +113,11 @@ read_sonar:
 	movs pc, lr
 
 
-
-
-
 get_time:
 
 	ldr r0,=CONTADOR
 	ldr r0, [r0]
-	
+
 	movs pc, lr
 
 
@@ -140,7 +137,7 @@ set_time:
 	ldmdb r0, {r1}
 
 	ldr r2,=CONTADOR
-	ldr r1, [r2]
+	stm r1, [r2]
 
 	mov r0, r1
 
