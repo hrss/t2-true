@@ -177,7 +177,7 @@ set_alarm:
 	ldr r2, [r2]
 
 	cmp r2, #MAX_ALARMS
-	mov r0, #-1
+	moveq r0, #-1
 	movseq pc, lr
 
 	ldr r3, =ALARMS_FUNCTION_BASE	@vetor de funcoes de alarme
