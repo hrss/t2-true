@@ -104,11 +104,12 @@ SET_GPIO:
 
 
 laco:
-    b laco
+    b laco @@Setar pilhas e passar controle para o usuário
 
 @Incrementando o contador
 IRQ_HANDLER:
-		ldr r1, =GPT_CR
+		push {r0-r12, lr}
+		ldr r1, =GPT_CR		@Avisando que a interrupção foi recebida
 		mov r0, #1
 		str r0, [r1, #GPT_SR]
 
@@ -117,8 +118,45 @@ IRQ_HANDLER:
 		add r0, r0, #1
 		str r0, [r1]
 
+		ldr r1, =ALARMS
+		ldr r1, [r1]
+		add r1, r1, #-1
+
+		while_alarms:
+				cmp r1, #0
+				blt end_while_alarms
+				ldr r2, =ALARMS_TIME_BASE
+				ldr r3, [r2, r1, lsl #2]
+
+				cmp r3, r0
+				bleq call_function
+				add r1, r1, #-1
+				b while_alarms
+@Lembrar de colocar tempo igual a zero
+		end_while_alarms:
+
 		sub lr, lr, #4
+		pop {r0-r12, lr}
 		movs pc, lr
+
+call_function:
+		push {lr}
+		ldr r4, =ALARMS_FUNCTION_BASE
+		ldr r4, [r4, r1, lsl #4]
+
+		mrs r0, CSPR
+		and r0, r0, #0b11111111111111111111111111110000
+		msr CPSR, r0
+
+		bl r4
+		mov r7, #23
+		svc 0x0
+end_call_function:
+		pop {lr}
+		mov pc, lr
+
+
+
 
 @id em r0
 read_sonar_with_id:
@@ -175,3 +213,17 @@ write_motor_1:
 .data
 CONTADOR:
  		.word 0x0
+ALARMS:
+		.word 0x0
+ALARMS_FUNCTION_BASE:
+		.wfill 8 0x0
+ALARMS_TIME_BASE:
+		.wfill 8 0x0
+CALLBACKS:
+		.word 0x0
+CALLBACKS_SONAR_BASE:
+		.wfill 8 0x0
+CALLBACKS_THRESHOLD_BASE:
+		.wfill 8 0x0
+CALLBACK_FUNCTION_BASE:
+		.wfill 8 0x0
