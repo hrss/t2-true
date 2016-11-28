@@ -118,8 +118,9 @@ read_sonar:
 
 get_time:
 
-	rotuloRETORNA_TEMPO
-
+	ldr r0,=CONTADOR
+	ldr r0, [r0]
+	
 	movs pc, lr
 
 
