@@ -1,171 +1,161 @@
 set_motor_speed:
 
-  	mrs r0, CSPR
-  	orr r0, r0, #0b11111
+  mrs r0, CSPR
+  orr r0, r0, #0b11111
 	msr CPSR, r0
 
 	mov r0, sp
- 
+
 
 	mrs r0, CSPR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
-	push {r1, r2}
+	push {r1, r2, lr}
 	ldmdb r0, {r1-r2}
 
 	mov r0, r1		@r0 e id
 	mov r1, r2		@r1 e velocidade
-		
 
-  
+
+
   	cmp r0, #1              @averigua se a id do motor e valida
   	cmpne r0,#0
   	mov r0, #-1
-  
-							
+
+
   	movmi r1, #-2           @confere se a velocidade e negativa
 
 
   	cmp r1, #63             @confere se o valor da velocidade valesse mais que um bit
   	movgt r1, #-2
-  
-	
+
+
   	cmp r0, #0		@se a cadeia de lacos rolar a funcao chama o hardware se tudo ok
-  	beq write_motor_0
-		
+  	bleq write_motor_0
+
   	cmp r0, #1
-  	beq write_motor_1	@r0 id e r1 velocidade					
-	
-  	pop {r1-r2}
+  	bleq write_motor_1	@r0 id e r1 velocidade
 
-  	movs pc,lr
+  	pop {r1-r2, lr}
+
+  	movs pc, lr
 
 
-set_motors_speed:	
+set_motors_speed:
 
 	mrs r0, CSPR
 	orr r0, r0, #0b11111
-	msr CPSR, r0							
-	
+	msr CPSR, r0
+
 	mov r0, sp
- 
+
 
 	mrs r0, CSPR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
-	
-	push {r1, r2}
-	ldmdb r0, {r1-r2}
 
-	mov r0, r1
-	mov r1, r2
-									
-	mov r2, #0
-	mov r3, r1							@velocidade 1 esta em r3
+	push {r1, r2, lr}
+	ldmdb r0, {r1-r3}
 
-	mov r1, r0
-	mov r0, r2							@ok para motor 0	
-	
-	mov r7, #18							@chama a syscall set_motor_speed para o motor 0
-	svc 0x0
+	cmp r0, 63
+	movhi r0, #-1
+	movshi pc, lr
 
-	cmp r0, #-2							@confere se o retorno de set_motor_speed e valido
-	moveq r0, #-1
-	
-	mov r1, r3
-	mov r3, r0							@r3 fica com r0(velocidade do motor 0)
+	cmp r1, 63
+	movhi r0, #-2
+	movshi pc, lr
+
+	mov r0, #0
+
+	bl write_motor_0				@chama a syscall set_motor_speed para o motor 0
 
 	mov r0, #1
+	mov r1, r2
 
-	svc 0x0									@chama a syscall set_motor_speed para o motor 1
-	
-	cmp r0, #-2
-	moveq r0, #-2
+	bl write_motor_1
 
-	mov r1, r0
-	mov r0, r3
-	
-	pop {r1-r2}
 
-	movs pc,lr
+
+	pop {r1-r3, lr}
+
+	movs pc, lr
 
 
 read_sonar:
-	
+
 	mrs r0, CSPR
 	orr r0, r0, #0b11111
-	msr CPSR, r0							
-	
+	msr CPSR, r0
+
 	mov r0, sp
- 
+
 
 	mrs r0, CSPR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
-	push {r1}
+	push {r1, lr}
 	ldmdb r0, {r1}
 
 	mov r0, r1
 
-	
-	
+
+
 	cmp r0, #15
 	movhi r0, #-1
-	
-	cmp r0, #-1
-	bne read_sonar_with_id	
-	
-	pop {r1}	
-	
+	movshi pc, lr
+
+	bl read_sonar_with_id
+
+	pop {r1, lr}
+
 	movs pc, lr
-	
 
-	
 
-	
+
+
+
 get_time:
 
-	rotuloRETORNA_TEMPO	
-	
+	rotuloRETORNA_TEMPO
+
 	movs pc, lr
 
 
 set_time:
-	
+
 	mrs r0, CSPR
 	orr r0, r0, #0b11111
-	msr CPSR, r0							
-	
+	msr CPSR, r0
+
 	mov r0, sp
- 
 
 	mrs r0, CSPR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
-	push {r1}
+	push {r1-r2}
 	ldmdb r0, {r1}
+
+	ldr r2,=CONTADOR
+	ldr r1, [r2]
 
 	mov r0, r1
 
+	pop {r1-r2}
 
+	movs pc, lr
 
-	pop {r1}
-	
-	
-	
-	
 
 set_alarm:
-	
+
 	mrs r0, CSPR
-  	orr r0, r0, #0b11111
-	msr CPSR, r0	
+  orr r0, r0, #0b11111
+	msr CPSR, r0
 
 	mov r0, sp
- 
+
 
 	mrs r0, CSPR
 	and r0, r0, #0b11111111111111111111111111110011
@@ -185,41 +175,39 @@ set_alarm:
 
 	movshi pc, lr
 
-	
 	ldr r2,=ALARMS
 	ldr r2, [r2]
-	
+
 	cmp r2, #MAX_ALARMS
 	mov r0, #-1
 	movseq pc, lr
 
 	ldr r3, =ALARMS_FUNCTION_BASE	@vetor de funcoes de alarme
 	mul r2, r2, #4			@posicao correta do ponteiro(respectiva funcao)
-	str r0, [r3, r2]		
-	
+	str r0, [r3, r2]
+
 	ldr r3, =ALARMS_TIME_BASE
 	str r1, [r3, r2]
 
 	ldr r2, =ALARMS
 	ldr r3, [r2]
 	add r3, r3, #1
-	str r3, [r2]	
+	str r3, [r2]
 
 	pop {r1-r3}
-	
+
 	mov r0, #0
 
 	movs pc, lr
-	
-	
+
+
 register_proximity_callback:
 
 	mrs r0, CSPR
-  	orr r0, r0, #0b11111
-	msr CPSR, r0	
+  orr r0, r0, #0b11111
+	msr CPSR, r0
 
 	mov r0, sp
- 
 
 	mrs r0, CSPR
 	and r0, r0, #0b11111111111111111111111111110011
@@ -238,34 +226,30 @@ register_proximity_callback:
 
 	movshi pc, lr
 
-
 	ldr r3, =CALLBACKS
 	ldr r3, [r3]
 
-	cmp r3, #MAX_CALLBACKS 
+	cmp r3, #MAX_CALLBACKS
 	movhi r0, #-1
-	
-	
+
 	movshi pc, lr
 
 	ldr r4, =CALLBACKS_SONAR_BASE	@vetor de sonares
 	mul r3, r3, #4			@posicao correta do sonar
-	str r0, [r4, r3]		
-	
+	str r0, [r4, r3]
+
 	ldr r4, =CALLBACK_THRESHOLD_BASE	@guarda as limiares de cada callback
 	str r1, [r4, r3]
-	
+
 	ldr r4, =CALLBACK_FUNCTION_BASE	@guarda as limiares de cada callback
 	str r2, [r4, r3]
 
 	ldr r3, =CALLBACKS		@incrementa o valor em CALLBACKS
 	ldr r4, [r3]
 	add r4, r4, #1
-	str r4, [r3]	
+	str r4, [r3]
 
 	pop {r1-r4}
 	mov r0, #0
 
 	movs pc, lr
-
-	
