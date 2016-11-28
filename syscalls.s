@@ -159,7 +159,7 @@ set_alarm:
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
-	push {r1-r3}
+	push {r1-r5}
 	ldmdb r0, {r1-r2}
 
 	mov r0, r1		@r0 e ponteiro
@@ -180,19 +180,31 @@ set_alarm:
 	moveq r0, #-1
 	movseq pc, lr
 
-	ldr r3, =ALARMS_FUNCTION_BASE	@vetor de funcoes de alarme
-	mul r2, r2, #4			@posicao correta do ponteiro(respectiva funcao)
-	str r0, [r3, r2]
-
 	ldr r3, =ALARMS_TIME_BASE
-	str r1, [r3, r2]
+	mov r4, #0
+
+add_alarm_while:
+		
+	cmp r4, #7			@inicia um while para encaixar o tempo do alarme na posicao certa do vetor de TEMPOS DO ALARME
+	bgt end_alarm_while 	
+	ldr r5, [r3, r4, lsl #2]
+	
+	cmp r5, #0
+	streq r1, [r3, r4, lsl #2] 
+	ldreq r3, =ALARMS_FUNCTION_BASE		@ja aproveita e encaixa no mesmo lugar so que em ALARMS_FUNCTION_BASE o ponteiro da funcao necessaria p o caso
+	str r0, [r3, r4, lsl#2]	
+	beq fim_do_while
+	add r4, r4, #1
+	b add_alarm_while	
+
+end_alarm_while:
 
 	ldr r2, =ALARMS
 	ldr r3, [r2]
 	add r3, r3, #1
 	str r3, [r2]
 
-	pop {r1-r3}
+	pop {r1-r5}
 
 	mov r0, #0
 
