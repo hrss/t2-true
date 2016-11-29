@@ -118,22 +118,53 @@ IRQ_HANDLER:
 		add r0, r0, #1
 		str r0, [r1]
 
-		ldr r1, =ALARMS
-		ldr r1, [r1]
-		add r1, r1, #-1
+		ldr r4, =ALARMS
+		ldr r6, [r4]
+    cmp r1, #6
+    beq end_while_alarms
+    mov r6, #7
 
 		while_alarms:
-				cmp r1, #0
+				cmp r6, #0
 				blt end_while_alarms
-				ldr r2, =ALARMS_TIME_BASE
-				ldr r3, [r2, r1, lsl #2]
+
+        ldr r2, =ALARMS_TIME_BASE
+				ldr r3, [r2, r6, lsl #2]
 
 				cmp r3, r0
+        moveq r3, #0
+        streq r3, [r2, r6, lsl #2]
+        ldreq r3, [r4]
+        addeq r3, r3, #-1
+        streq r3, [r4]
+
 				bleq call_function
-				add r1, r1, #-1
+				add r6, r6, #-1
 				b while_alarms
-@Lembrar de colocar tempo igual a zero
+        @Lembrar de colocar tempo igual a zero ao inicializar
 		end_while_alarms:
+
+
+    ldr r4, =CALLBACKS
+    ldr r6, [r4]
+    cmp r6, #0
+    beq end_while_callbacks
+
+    mov r6, #7
+
+    while_callbacks:
+      cmp r6, #0
+      blt end_while_callbacks
+
+      ldr r3, =CALLBACKS_SONAR_BASE
+      ldr r1, [r3, r6, lsl #2]
+      mov r0, r5
+      @Continuar (não usar r1 ou r2, por causa do read sonar)
+    end_while_callbacks:
+
+
+
+
 
 		sub lr, lr, #4
 		pop {r0-r12, lr}
@@ -141,8 +172,8 @@ IRQ_HANDLER:
 
 call_function:
 		push {lr}
-		ldr r4, =ALARMS_FUNCTION_BASE
-		ldr r4, [r4, r1, lsl #4]
+		ldr r7, =ALARMS_FUNCTION_BASE
+		ldr r7, [r7, r6, lsl #2]
 
 		mrs r0, CSPR
 		and r0, r0, #0b11111111111111111111111111110000
@@ -151,11 +182,10 @@ call_function:
 		bl r4
 		mov r7, #23
 		svc 0x0
+
 end_call_function:
 		pop {lr}
 		mov pc, lr
-
-
 
 
 @id em r0
