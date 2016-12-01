@@ -6,6 +6,8 @@ _start:
 interrupt_vector:
 
     b RESET_HANDLER
+.org 0x08
+		b SVC_HANDLER
 .org 0x18
     b IRQ_HANDLER
 
@@ -96,19 +98,95 @@ SET_GPIO:
 		.set GPIO_PSER, 0x8
 
 
-		mov r0, #0b11111111111111100000000000111110 @Setando Gdir
+		ldr r0, =0b11111111111111100000000000111110 @Setando Gdir
 		ldr r1, =GPIO_BASE
 		str r0, [r1, #GPIO_GDIR]
 
 		@Setar valor inicial do trigger e dos motor_write no dr
 
+		@Setando as pilhas dos modos
 
-laco:
-    b laco @@Setar pilhas e passar controle para o usuário
+		mrs r0, CPSR
+		orr r0, r0, #0b11111 @System/User
+		msr CPSR, r0
+
+		ldr r0, =0x80000000
+		mov sp, r0
+
+
+		mrs r0, CPSR
+		and r0, r0, #0b11111111111111111111111111110011 @Supervisor
+		msr CPSR, r0
+
+		ldr r0, =0x77000000
+		mov sp, r0
+
+		mrs r0, CPSR
+		orr r0, r0, #0b11111
+		and r0, r0, #0b11111111111111111111111111110010 @IRQ
+		msr CPSR, r0
+
+		ldr r0, =0x75000000
+		mov sp, r0
+
+		mrs r0, CPSR
+		orr r0, r0, #0b11111
+		and r0, r0, #0b11111111111111111111111111110111 @Abort
+		msr CPSR, r0
+
+		ldr r0, =0x73000000
+		mov sp, r0
+
+		mrs r0, CPSR
+		orr r0, r0, #0b11111
+		and r0, r0, #0b11111111111111111111111111111011 @Undefined
+		msr CPSR, r0
+
+		ldr r0, =0x72000000
+		mov sp, r0
+
+		mrs r0, CPSR
+		orr r0, r0, #0b11111
+		and r0, r0, #0b11111111111111111111111111110001 @FIQ
+		msr CPSR, r0
+
+		ldr r0, =0x71000000
+		mov sp, r0
+
+		mrs r0, CPSR
+		orr r0, r0, #0b11111
+		and r0, r0, #0b11111111111111111111111111110000 @IRQ
+		msr CPSR, r0
+
+
+		@Passando controle para o usuário
+		ldr r0, =0x70000000
+		mov pc, r0
+
+
+SVC_HANDLER:
+	cmp r7, #16
+	beq read_sonar
+	cmp r7, #17
+	beq register_proximity_callback
+	cmp r7, #18
+	beq set_motor_speed
+	cmp r7, #19
+	beq set_motors_speed
+	cmp r7, #20
+	beq get_time
+	cmp r7, #21
+	beq set_time
+	cmp r7, #22
+	beq set_alarm
+	cmp r7, #23
+	beq end_call_function
+
+	movs pc, lr
 
 @Incrementando o contador
 IRQ_HANDLER:
-		push {r0-r12, lr}
+		push {r0-r7, lr}
 		ldr r1, =GPT_CR		@Avisando que a interrupção foi recebida
 		mov r0, #1
 		str r0, [r1, #GPT_SR]
@@ -120,7 +198,7 @@ IRQ_HANDLER:
 
 		ldr r4, =ALARMS
 		ldr r6, [r4]
-    cmp r1, #6
+    cmp r6, #0
     beq end_while_alarms
     mov r6, #7
 
@@ -138,7 +216,7 @@ IRQ_HANDLER:
         addeq r3, r3, #-1
         streq r3, [r4]
 
-				bleq call_function
+				bleq call_function_alarms
 				add r6, r6, #-1
 				b while_alarms
         @Lembrar de colocar tempo igual a zero ao inicializar
@@ -147,45 +225,55 @@ IRQ_HANDLER:
 
     ldr r4, =CALLBACKS
     ldr r6, [r4]
-    cmp r6, #0
-    beq end_while_callbacks
-
-    mov r6, #7
 
     while_callbacks:
       cmp r6, #0
       blt end_while_callbacks
 
       ldr r3, =CALLBACKS_SONAR_BASE
-      ldr r1, [r3, r6, lsl #2]
-      mov r0, r5
-      @Continuar (não usar r1 ou r2, por causa do read sonar)
+      ldr r0, [r3, r6, lsl #2]
+    	bl read_sonar_with_id
+			ldr r3, =CALLBACKS_THRESHOLD_BASE
+			ldr r1, [r3, r6, lsl #2]
+			cmp r0, r1
+			bllt call_function_callbacks
     end_while_callbacks:
 
-
-
-
-
 		sub lr, lr, #4
-		pop {r0-r12, lr}
+		pop {r0-r7, lr}
 		movs pc, lr
 
-call_function:
+call_function_alarms:
 		push {lr}
 		ldr r7, =ALARMS_FUNCTION_BASE
 		ldr r7, [r7, r6, lsl #2]
 
-		mrs r0, CSPR
+		mrs r0, CPSR
 		and r0, r0, #0b11111111111111111111111111110000
 		msr CPSR, r0
 
-		bl r4
-		mov r7, #23
-		svc 0x0
+		ldr lr, =return_from_function
+		mov pc, r4
 
 end_call_function:
 		pop {lr}
 		mov pc, lr
+
+call_function_callbacks:
+		push {lr}
+		ldr r7, =CALLBACKS_FUNCTION_BASE
+		ldr r7, [r7, r6, lsl #2]
+
+		mrs r0, CPSR
+		and r0, r0, #0b11111111111111111111111111110000
+		msr CPSR, r0
+
+		ldr lr, =return_from_function
+		mov pc, r4
+
+return_from_function:
+		mov r7, #23
+		svc 0x0
 
 
 @id em r0
@@ -208,7 +296,8 @@ read_sonar_with_id:
 			cmp r2, #0
 			beq wait_for_flag
 
-		and r0, r0, #0b00000000000000011111111111000000 @Mascara para a leitura do sonar
+		ldr r2, =0b00000000000000011111111111000000
+		and r0, r0, r2 @Mascara para a leitura do sonar
 		mov r0, r0, lsr #6
 		mov pc, lr
 
@@ -246,14 +335,49 @@ CONTADOR:
 ALARMS:
 		.word 0x0
 ALARMS_FUNCTION_BASE:
-		.wfill 8 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
 ALARMS_TIME_BASE:
-		.wfill 8 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
 CALLBACKS:
 		.word 0x0
 CALLBACKS_SONAR_BASE:
-		.wfill 8 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
 CALLBACKS_THRESHOLD_BASE:
-		.wfill 8 0x0
-CALLBACK_FUNCTION_BASE:
-		.wfill 8 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+CALLBACKS_FUNCTION_BASE:
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0
+		.word 0x0

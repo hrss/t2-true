@@ -1,13 +1,19 @@
+.set MAX_ALARMS, 0x08
+.set MAX_CALLBACKS, 0x08
+
+return:
+	movs pc, lr
+
 set_motor_speed:
 
-  mrs r0, CSPR
+  mrs r0, CPSR
   orr r0, r0, #0b11111
 	msr CPSR, r0
 
 	mov r0, sp
 
 
-	mrs r0, CSPR
+	mrs r0, CPSR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
@@ -44,27 +50,27 @@ set_motor_speed:
 
 set_motors_speed:
 
-	mrs r0, CSPR
+	mrs r0, CPSR
 	orr r0, r0, #0b11111
 	msr CPSR, r0
 
 	mov r0, sp
 
 
-	mrs r0, CSPR
+	mrs r0, CPSR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
 	push {r1, r2, lr}
 	ldmdb r0, {r1-r3}
 
-	cmp r0, 63
+	cmp r0, #63
 	movhi r0, #-1
-	movshi pc, lr
+	bhi return
 
-	cmp r1, 63
+	cmp r1, #63
 	movhi r0, #-2
-	movshi pc, lr
+	bhi return
 
 	mov r0, #0
 
@@ -84,14 +90,14 @@ set_motors_speed:
 
 read_sonar:
 
-	mrs r0, CSPR
+	mrs r0, CPSR
 	orr r0, r0, #0b11111
 	msr CPSR, r0
 
 	mov r0, sp
 
 
-	mrs r0, CSPR
+	mrs r0, CPSR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
@@ -104,7 +110,7 @@ read_sonar:
 
 	cmp r0, #15
 	movhi r0, #-1
-	movshi pc, lr
+	bhi return
 
 	bl read_sonar_with_id
 
@@ -123,13 +129,13 @@ get_time:
 
 set_time:
 
-	mrs r0, CSPR
+	mrs r0, CPSR
 	orr r0, r0, #0b11111
 	msr CPSR, r0
 
 	mov r0, sp
 
-	mrs r0, CSPR
+	mrs r0, CPSR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
@@ -137,7 +143,7 @@ set_time:
 	ldmdb r0, {r1}
 
 	ldr r2,=CONTADOR
-	stm r1, [r2]
+	str r1, [r2]
 
 	mov r0, r1
 
@@ -148,14 +154,14 @@ set_time:
 
 set_alarm:
 
-	mrs r0, CSPR
+	mrs r0, CPSR
   orr r0, r0, #0b11111
 	msr CPSR, r0
 
 	mov r0, sp
 
 
-	mrs r0, CSPR
+	mrs r0, CPSR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
@@ -171,31 +177,31 @@ set_alarm:
 	cmp r2, r1
 	movhi r0, #-2
 
-	movshi pc, lr
+	bhi return
 
 	ldr r2,=ALARMS
 	ldr r2, [r2]
 
 	cmp r2, #MAX_ALARMS
 	moveq r0, #-1
-	movseq pc, lr
+	beq return
 
 	ldr r3, =ALARMS_TIME_BASE
 	mov r4, #0
 
 add_alarm_while:
-		
+
 	cmp r4, #7			@inicia um while para encaixar o tempo do alarme na posicao certa do vetor de TEMPOS DO ALARME
-	bgt end_alarm_while 	
+	bgt end_alarm_while
 	ldr r5, [r3, r4, lsl #2]
-	
+
 	cmp r5, #0
-	streq r1, [r3, r4, lsl #2] 
+	streq r1, [r3, r4, lsl #2]
 	ldreq r3, =ALARMS_FUNCTION_BASE		@ja aproveita e encaixa no mesmo lugar so que em ALARMS_FUNCTION_BASE o ponteiro da funcao necessaria p o caso
-	str r0, [r3, r4, lsl#2]	
-	beq fim_do_while
+	str r0, [r3, r4, lsl#2]
+	beq end_alarm_while
 	add r4, r4, #1
-	b add_alarm_while	
+	b add_alarm_while
 
 end_alarm_while:
 
@@ -213,13 +219,13 @@ end_alarm_while:
 
 register_proximity_callback:
 
-	mrs r0, CSPR
+	mrs r0, CPSR
   orr r0, r0, #0b11111
 	msr CPSR, r0
 
 	mov r0, sp
 
-	mrs r0, CSPR
+	mrs r0, CPSR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
@@ -234,7 +240,7 @@ register_proximity_callback:
 	cmp r0, #15
 	movhi r0, #-2
 
-	movshi pc, lr
+	bhi return
 
 	ldr r3, =CALLBACKS
 	ldr r3, [r3]
@@ -242,10 +248,10 @@ register_proximity_callback:
 	cmp r3, #MAX_CALLBACKS
 	movhi r0, #-1
 
-	movshi pc, lr
+	bhi return
 
 	ldr r4, =CALLBACKS_SONAR_BASE	@vetor de sonares
-	mul r3, r3, #4			@posicao correta do sonar
+	lsl r3, r3, #2			@posicao correta do sonar
 	str r0, [r4, r3]
 
 	ldr r4, =CALLBACKS_THRESHOLD_BASE	@guarda as limiares de cada callback
