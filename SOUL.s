@@ -4,7 +4,6 @@
 _start:
 
 interrupt_vector:
-
     b RESET_HANDLER
 .org 0x08
 		b SVC_HANDLER
@@ -21,7 +20,6 @@ mov r0,#0
 str r0,[r2]
 
 RESET_HANDLER:
-
     @Set interrupt table base address on coprocessor 15.
     ldr r0, =interrupt_vector
     mcr p15, 0, r0, c12, c0, 0
@@ -110,7 +108,7 @@ SET_GPIO:
 		orr r0, r0, #0b11111 @System/User
 		msr CPSR, r0
 
-		ldr r0, =0x80000000
+		ldr r0, =0x76000000
 		mov sp, r0
 
 
@@ -118,7 +116,7 @@ SET_GPIO:
 		and r0, r0, #0b11111111111111111111111111110011 @Supervisor
 		msr CPSR, r0
 
-		ldr r0, =0x77000000
+		ldr r0, =0x74000000
 		mov sp, r0
 
 		mrs r0, CPSR
@@ -126,7 +124,7 @@ SET_GPIO:
 		and r0, r0, #0b11111111111111111111111111110010 @IRQ
 		msr CPSR, r0
 
-		ldr r0, =0x75000000
+		ldr r0, =0x73005000
 		mov sp, r0
 
 		mrs r0, CPSR
@@ -142,7 +140,7 @@ SET_GPIO:
 		and r0, r0, #0b11111111111111111111111111111011 @Undefined
 		msr CPSR, r0
 
-		ldr r0, =0x72000000
+		ldr r0, =0x72005000
 		mov sp, r0
 
 		mrs r0, CPSR
@@ -160,8 +158,9 @@ SET_GPIO:
 
 
 		@Passando controle para o usuário
-		ldr r0, =0x70000000
-		mov pc, r0
+		ldr r0, =0x70001000
+		mov lr, r0
+		movs pc, lr
 
 
 SVC_HANDLER:
