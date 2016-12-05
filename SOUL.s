@@ -158,9 +158,8 @@ SET_GPIO:
 
 
 		@Passando controle para o usuário
-		ldr r0, =0x70001000
-		mov lr, r0
-		movs pc, lr
+		ldr r0, =0x77802000
+		blx r0
 
 
 SVC_HANDLER:
