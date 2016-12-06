@@ -282,8 +282,20 @@ read_sonar_with_id:
 		@Mascara para escrever o id do sonar no DR, no lugar certo
 		mov r0, r0, lsl #2
 		and r2, r2, #0b11111111111111111111111111000001
-		add r0, r0, #2 @Acionando o trigger
+		orr r0, r0, #2 @Acionando o trigger
 		orr r2, r2, r0
+		str r2, [r1]
+
+		ldr r0, =0x00000FFF
+		wait_to_trigger:
+			add r0, r0, #-1
+			cmp r0, #0
+			beq finished_waiting
+			b wait_to_trigger
+		finished_waiting:
+
+		mov r0, #0b11111111111111111111111111111101
+		and r2, r2, r0
 
 		str r2, [r1]
 
@@ -294,7 +306,7 @@ read_sonar_with_id:
 			cmp r2, #0
 			beq wait_for_flag
 
-		ldr r2, =0b00000000000000011111111111000000
+		ldr r2, =0b00000000000000111111111111000000
 		and r0, r0, r2 @Mascara para a leitura do sonar
 		mov r0, r0, lsr #6
 		mov pc, lr
@@ -324,8 +336,21 @@ write_motor_1:
 
 		mov pc, lr
 
+write_both_motors:
 
+		ldr r3, =GPIO_BASE
+		ldr r2, [r3]
 
+		@Mascara para escrever o id do sonar no DR, no lugar certo
+		mov r0, r0, lsl #19
+		mov r1, r1, lsl #26
+		and r2, r2, #0b00000001111111111111111111111111
+		and r2, r2, #0b11111110000000111111111111111111
+		orr r2, r2, r0
+		orr r2, r2, r1
+		str r2, [r3]
+
+		mov pc, lr
 
 .data
 CONTADOR:

@@ -50,66 +50,79 @@ set_motor_speed:
 
 set_motors_speed:
 
+	@Guardando valor do r1 para poder salvar sp do usuáro
+	push {r1}
+
+	@ Mudando para o modo system
 	mrs r0, CPSR
 	orr r0, r0, #0b11111
 	msr CPSR, r0
 
-	mov r0, sp
+	@Salvando sp em r1
+	mov r1, sp
 
-
+	@Voltando para o modo supervisor
 	mrs r0, CPSR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
-	push {r1, r2, lr}
-	ldmdb r0, {r1-r3}
+	@Colocando sp do usario em r0 e recuperando r1
+	mov r0, r1
+	pop {r1}
 
-	cmp r0, #63
-	movhi r0, #-1
-	bhi return
+  @Guardando registradores que serão usados e pegando os parametros da pilha
+	push {r1-r3, lr}
+	ldmia r0, {r1-r2}
 
+  @Comparando com a velocidade maxima e retornando erro caso seja maior para o motor 0
 	cmp r1, #63
-	movhi r0, #-2
+	movhi r0, #-1
+	pophi {r1-r3, lr}
 	bhi return
 
-	mov r0, #0
+	@Comparando com a velocidade maxima e retornando erro caso seja maior para o motor 1
+	cmp r2, #63
+	movhi r0, #-2
+	pophi {r1-r3, lr}
+	bhi return
 
-	bl write_motor_0				@chama a syscall set_motor_speed para o motor 0
+	mov r0, r1
 
-	mov r0, #1
 	mov r1, r2
 
-	bl write_motor_1
-
-
+	bl write_both_motors				@chama a syscall set_motor_speed para o motor 0
 
 	pop {r1-r3, lr}
 
+	mov r0, #0 @Retorno quando está tudo certo
 	movs pc, lr
 
 
 read_sonar:
+	push {r1}
 
 	mrs r0, CPSR
 	orr r0, r0, #0b11111
 	msr CPSR, r0
 
-	mov r0, sp
-
+	mov r1, sp
 
 	mrs r0, CPSR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
+	mov r0, r1
+
+	pop {r1}
+
 	push {r1, lr}
-	ldmdb r0, {r1}
+	ldmia r0, {r1}
 
 	mov r0, r1
 
-
-
 	cmp r0, #15
 	movhi r0, #-1
+	pophi {r1, lr}
 	bhi return
 
 	bl read_sonar_with_id
