@@ -6,19 +6,24 @@ return:
 
 set_motor_speed:
 
-  mrs r0, CPSR
-  orr r0, r0, #0b11111
+ 	push {r1}
+
+	mrs r0, CPSR
+	orr r0, r0, #0b11111
 	msr CPSR, r0
 
-	mov r0, sp
-
+	mov r1, sp
 
 	mrs r0, CPSR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
-	push {r1, r2, lr}
-	ldmdb r0, {r1-r2}
+	mov r0, r1
+
+	pop {r1}
+
+	push {r1-r2, lr}
+	ldmia r0, {r1-r2}
 
 	mov r0, r1		@r0 e id
 	mov r1, r2		@r1 e velocidade
@@ -28,14 +33,17 @@ set_motor_speed:
   	cmp r0, #1              @averigua se a id do motor e valida
   	cmpne r0,#0
   	movne r0, #-1
-
+	popne {r1-r2, lr}
+	bne return
 
   	movmi r1, #-2           @confere se a velocidade e negativa
-
+	popmi {r1-r2, lr}
+	bmi return	
 
   	cmp r1, #63             @confere se o valor da velocidade valesse mais que um bit
   	movgt r1, #-2
-
+	popgt {r1-r2, lr}
+	bgt return
 
   	cmp r0, #0		@se a cadeia de lacos rolar a funcao chama o hardware se tudo ok
   	bleq write_motor_0
@@ -141,19 +149,22 @@ get_time:
 
 
 set_time:
+	push {r1}
 
 	mrs r0, CPSR
 	orr r0, r0, #0b11111
 	msr CPSR, r0
 
-	mov r0, sp
+	mov r1, sp
 
 	mrs r0, CPSR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
-	push {r1-r2}
-	ldmdb r0, {r1}
+	mov r0, r1
+
+	pop {r1}
+	ldmia r0, {r1}
 
 	ldr r2,=CONTADOR
 	str r1, [r2]
@@ -167,19 +178,23 @@ set_time:
 
 set_alarm:
 
+	push {r1}
+
 	mrs r0, CPSR
-  orr r0, r0, #0b11111
+	orr r0, r0, #0b11111
 	msr CPSR, r0
 
-	mov r0, sp
-
+	mov r1, sp
 
 	mrs r0, CPSR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
+	mov r0, r1
+
+	pop {r1}
 	push {r1-r5}
-	ldmdb r0, {r1-r2}
+	ldmia r0, {r1-r2}
 
 	mov r0, r1		@r0 e ponteiro
 	mov r1, r2		@r1 e tempo do alarme
@@ -189,7 +204,7 @@ set_alarm:
 
 	cmp r2, r1
 	movhi r0, #-2
-
+	pophi {r1-r5}
 	bhi return
 
 	ldr r2,=ALARMS
@@ -197,6 +212,7 @@ set_alarm:
 
 	cmp r2, #MAX_ALARMS
 	moveq r0, #-1
+	popeq {r1-r5}
 	beq return
 
 	ldr r3, =ALARMS_TIME_BASE
@@ -232,18 +248,24 @@ end_alarm_while:
 
 register_proximity_callback:
 
+	push {r1}
+
 	mrs r0, CPSR
-  orr r0, r0, #0b11111
+	orr r0, r0, #0b11111
 	msr CPSR, r0
 
-	mov r0, sp
+	mov r1, sp
 
 	mrs r0, CPSR
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
+	mov r0, r1
+
+	pop {r1}
+
 	push {r1-r4}
-	ldmdb r0, {r1-r3}
+	ldmia r0, {r1-r3}
 
 	mov r0, r1			@r0 e sonar_id
 	mov r1, r2			@r1 e limiar
@@ -252,7 +274,7 @@ register_proximity_callback:
 
 	cmp r0, #15
 	movhi r0, #-2
-
+	pophi {r1-r4}
 	bhi return
 
 	ldr r3, =CALLBACKS
@@ -260,7 +282,7 @@ register_proximity_callback:
 
 	cmp r3, #MAX_CALLBACKS
 	movhi r0, #-1
-
+	pophi {r1-r4}
 	bhi return
 
 	ldr r4, =CALLBACKS_SONAR_BASE	@vetor de sonares
