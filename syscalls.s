@@ -27,7 +27,7 @@ set_motor_speed:
 
   	cmp r0, #1              @averigua se a id do motor e valida
   	cmpne r0,#0
-  	mov r0, #-1
+  	movne r0, #-1
 
 
   	movmi r1, #-2           @confere se a velocidade e negativa
