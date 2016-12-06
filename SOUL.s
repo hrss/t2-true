@@ -93,10 +93,10 @@ SET_TZIC:
 SET_GPIO:
 		.set GPIO_BASE, 0x53F84000 @ DR
 		.set GPIO_GDIR, 0x4
-		.set GPIO_PSER, 0x8
+		.set GPIO_PSR, 0x8
 
 
-		ldr r0, =0b11111111111111100000000000111110 @Setando Gdir
+		ldr r0, =0b11111111111111000000000000111110 @Setando Gdir
 		ldr r1, =GPIO_BASE
 		str r0, [r1, #GPIO_GDIR]
 
