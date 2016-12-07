@@ -252,13 +252,40 @@ call_function_alarms:
 		ldr r7, [r7, r6, lsl #2]
 
 		mrs r0, CPSR
-		and r0, r0, #0b11111111111111111111111111110000
+		orr r0, r0, #0b11111
+		msr CPSR, r0
+
+		mov r1, lr
+
+		mrs r0, CPSR
+		orr r0, r0, #0b11111
+		and r0, r0, #0b11111111111111111111111111110010 @IRQ
+		msr CPSR, r0
+
+		push {r1}
+
+		mrs r0, CPSR
+		orr r0, r0, #0b11111
+		and r0, r0, #0b11111111111111111111111111110000@User
 		msr CPSR, r0
 
 		ldr lr, =return_from_function
 		mov pc, r7
 
 end_call_function:
+		mrs r7, CPSR
+		orr r7, r7, #0b11111
+		and r7, r7, #0b11111111111111111111111111110010 @IRQ
+		msr CPSR, r7
+
+		pop {r1}
+
+		mrs r0, CPSR
+		orr r0, r0, #0b11111
+		msr CPSR, r0
+
+		mov lr, r1
+
 		mrs r7, CPSR
 		orr r7, r7, #0b11111
 		and r7, r7, #0b11111111111111111111111111110010 @IRQ
@@ -271,6 +298,19 @@ call_function_callbacks:
 		push {r0-r7, lr}
 		ldr r7, =CALLBACKS_FUNCTION_BASE
 		ldr r7, [r7, r6, lsl #2]
+
+		mrs r0, CPSR
+		orr r0, r0, #0b11111
+		msr CPSR, r0
+
+		mov r1, lr
+
+		mrs r0, CPSR
+		orr r0, r0, #0b11111
+		and r0, r0, #0b11111111111111111111111111110010 @IRQ
+		msr CPSR, r0
+
+		push {r1}
 
 		mrs r0, CPSR
 		and r0, r0, #0b11111111111111111111111111110000
