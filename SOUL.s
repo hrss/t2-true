@@ -38,7 +38,7 @@ RESET_HANDLER:
 		mov r0, #0
 		str r0, [r1, #GPT_PR]
 
-		ldr r0, =100
+		ldr r0, =1000
 		str r0, [r1, #GPT_OCR1]
 
 		mov r0, #1
@@ -223,6 +223,7 @@ IRQ_HANDLER:
 
     ldr r4, =CALLBACKS
     ldr r6, [r4]
+		add r6, r6, #-1
 
     while_callbacks:
       cmp r6, #0
@@ -230,12 +231,16 @@ IRQ_HANDLER:
 
       ldr r3, =CALLBACKS_SONAR_BASE
       ldr r0, [r3, r6, lsl #2]
-    	bl read_sonar_with_id
+
+			bl read_sonar_with_id
+
 			ldr r3, =CALLBACKS_THRESHOLD_BASE
 			ldr r1, [r3, r6, lsl #2]
 			cmp r0, r1
+
 			bllt call_function_callbacks
-    end_while_callbacks:
+
+		end_while_callbacks:
 
 		sub lr, lr, #4
 		pop {r0-r7, lr}
