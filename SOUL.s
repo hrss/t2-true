@@ -153,7 +153,7 @@ SET_GPIO:
 
 		mrs r0, CPSR
 		orr r0, r0, #0b11111
-		and r0, r0, #0b11111111111111111111111111110000 @IRQ
+		and r0, r0, #0b11111111111111111111111111110000 @User
 		msr CPSR, r0
 
 
@@ -247,7 +247,7 @@ IRQ_HANDLER:
 		movs pc, lr
 
 call_function_alarms:
-		push {lr}
+		push {r0-r7, lr}
 		ldr r7, =ALARMS_FUNCTION_BASE
 		ldr r7, [r7, r6, lsl #2]
 
@@ -259,11 +259,16 @@ call_function_alarms:
 		mov pc, r7
 
 end_call_function:
-		pop {lr}
+		mrs r7, CPSR
+		orr r7, r7, #0b11111
+		and r7, r7, #0b11111111111111111111111111110010 @IRQ
+		msr CPSR, r7
+
+		pop {r0-r7, lr}
 		mov pc, lr
 
 call_function_callbacks:
-		push {lr}
+		push {r0-r7, lr}
 		ldr r7, =CALLBACKS_FUNCTION_BASE
 		ldr r7, [r7, r6, lsl #2]
 

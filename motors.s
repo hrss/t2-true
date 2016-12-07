@@ -23,42 +23,42 @@
 .globl _start
 
 _start:                         @ main
+mov r7, #22
+ldr r0, =turn_around
+mov r1, #5
+push {r0-r1}
+svc 0x0
+pop {r0-r2}
+mov r7, #22
+ldr r0, =turn_around2
+mov r1, #100
+push {r0-r1}
+svc 0x0
+pop {r0-r2}
+
+
 loop:
-        mov r0, #10              @ Carrega em r0 a velocidade do motor 0.
+        mov r0, #25              @ Carrega em r0 a velocidade do motor 0.
                                 @ Lembre-se: apenas os 6 bits menos significativos
                                 @ serao utilizados.
-        mov r1, #10              @ Carrega em r1 a velocidade do motor 1.
+        mov r1, #25              @ Carrega em r1 a velocidade do motor 1.
         mov r7, #19            @ Identifica a syscall 124 (write_motors).
 				push {r0-r1}
         svc 0x0                 @ Faz a chamada da syscall.
 				pop {r0-r1}
 
-        ldr r6, =800           @ r6 <- 1200 (Limiar para parar o robo)
 
-        mov r0, #3              @ Define em r0 o identificador do sonar a ser consultado.
-				push {r0}
-        mov r7, #16            @ Identifica a syscall 125 (read_sonar).
-        svc 0x0
-        mov r5, r0              @ Armazena o retorno da syscall.
-				pop {r1}
+				ldr r0, =0x0002FFFF
+				wait_a_little3:
+					add r0, #-1
+					cmp r0, #0
+					b wait_a_little3
 
-        mov r0, #4              @ Define em r0 o sonar.
-				push {r0}
-        mov r7, #16
-        svc 0x0
-				pop {r1}
-
-        cmp r5, r0              @ Compara o retorno (em r0) com r5.
-        bge min                 @ Se r5 > r0: Salta pra min
-        mov r0, r5              @ Senao: r0 <- r5
-min:
 
 
         cmp r0, r6              @ Compara r0 com r6
         blt turn_around                 @ Se r0 menor que o limiar: Salta para end
-
                                 @ Senao define uma velocidade para os 2 motores
-
 
         b loop                  @ Refaz toda a logica
 
@@ -71,11 +71,24 @@ turn_around:                            @ Vira o robo (pra um lado so, hehe)
         svc 0x0
 				pop {r0-r1}
 
-				ldr r0, =0x000000FF
+				ldr r0, =0x0002FFFF
 				wait_a_little:
 					add r0, #-1
 					cmp r0, #0
-					beq loop
+					moveq pc, lr
 					b wait_a_little
 
-        b loop              @ volta pro loop
+turn_around2:                            @ Vira o robo (pra um lado so, hehe)
+        mov r0, #0
+        mov r1, #63
+				push {r0-r1}
+        mov r7, #19
+        svc 0x0
+				pop {r0-r1}
+
+				ldr r0, =0x0002FFFF
+				wait_a_little2:
+					add r0, #-1
+					cmp r0, #0
+					moveq pc, lr
+					b wait_a_little2
