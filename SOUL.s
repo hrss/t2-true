@@ -38,7 +38,7 @@ RESET_HANDLER:
 		mov r0, #0
 		str r0, [r1, #GPT_PR]
 
-		mov r0, #100
+		ldr r0, =100
 		str r0, [r1, #GPT_OCR1]
 
 		mov r0, #1
@@ -251,7 +251,7 @@ call_function_alarms:
 		msr CPSR, r0
 
 		ldr lr, =return_from_function
-		mov pc, r4
+		mov pc, r7
 
 end_call_function:
 		pop {lr}
@@ -267,7 +267,7 @@ call_function_callbacks:
 		msr CPSR, r0
 
 		ldr lr, =return_from_function
-		mov pc, r4
+		mov pc, r7
 
 return_from_function:
 		mov r7, #23
@@ -276,6 +276,10 @@ return_from_function:
 
 @id em r0
 read_sonar_with_id:
+		@mrs r1, CPSR
+		@and r1, r0, #0b11111111111111111111111011111111
+		@msr CPSR, r1
+
 		ldr r1, =GPIO_BASE
 		ldr r2, [r1]
 
@@ -286,7 +290,7 @@ read_sonar_with_id:
 		orr r2, r2, r0
 		str r2, [r1]
 
-		ldr r0, =0x00000FFF
+		ldr r0, =0x0000000F
 		wait_to_trigger:
 			add r0, r0, #-1
 			cmp r0, #0

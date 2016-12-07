@@ -38,7 +38,7 @@ set_motor_speed:
 
   	movmi r1, #-2           @confere se a velocidade e negativa
 	popmi {r1-r2, lr}
-	bmi return	
+	bmi return
 
   	cmp r1, #63             @confere se o valor da velocidade valesse mais que um bit
   	movgt r1, #-2
@@ -227,7 +227,7 @@ add_alarm_while:
 	cmp r5, #0
 	streq r1, [r3, r4, lsl #2]
 	ldreq r3, =ALARMS_FUNCTION_BASE		@ja aproveita e encaixa no mesmo lugar so que em ALARMS_FUNCTION_BASE o ponteiro da funcao necessaria p o caso
-	str r0, [r3, r4, lsl#2]
+	streq r0, [r3, r4, lsl #2]
 	beq end_alarm_while
 	add r4, r4, #1
 	b add_alarm_while
