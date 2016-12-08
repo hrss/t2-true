@@ -4,7 +4,7 @@
 return:
 	movs pc, lr
 
-set_motor_speed:
+set_motor_speed:@define a velocidade em 1 dos motores
 
  	push {r1}
 
@@ -12,7 +12,7 @@ set_motor_speed:
 	orr r0, r0, #0b11111
 	msr CPSR, r0
 
-	mov r1, sp
+	mov r1, sp				@acesso a pilha do system e depois volta ao supervisor
 
 	mrs r0, CPSR
 	and r0, r0, #0b11111111111111111111111111110011
@@ -23,7 +23,7 @@ set_motor_speed:
 		pop {r1}
 
 		push {r1-r2, lr}
-		ldmia r0, {r1-r2}
+		ldmia r0, {r1-r2}	@desempilha os parametros
 
 		mov r0, r1		@r0 e id
 		mov r1, r2		@r1 e velocidade
@@ -112,39 +112,39 @@ read_sonar:
 	push {r1}
 
 	mrs r0, CPSR
-	orr r0, r0, #0b11111
+	orr r0, r0, #0b11111		@acesso ao system
 	msr CPSR, r0
 
 	mov r1, sp
 
 	mrs r0, CPSR
-	and r0, r0, #0b11111111111111111111111111110011
+	and r0, r0, #0b11111111111111111111111111110011	@volta ao modo Supervisor
 	msr CPSR, r0
 
 	mov r0, r1
 
 	pop {r1}
 
-	push {r1-r2, lr}
-	ldmia r0, {r1}
+	push {r1, lr}
+	ldmia r0, {r1}	@desempilha o parametro id do sonar a ser lido
 
 	mov r0, r1
 
-	cmp r0, #15
-	movhi r0, #-1
-	pophi {r1-r2, lr}
+	cmp r0, #15		@confere se o id e valido (menor ou igual a 15)
+	movhi r0, #-1	@caso contrario, retorna -1
+	pophi {r1, lr}
 	bhi return
 
-	bl read_sonar_with_id
+	bl read_sonar_with_id	@chama o hardware para a leitura da onda do  sonar
 
-	pop {r1-r2, lr}
+	pop {r1, lr}			@desempilha os registradores
 
 	movs pc, lr
 
 
 get_time:
 
-	ldr r0,=CONTADOR
+	ldr r0,=CONTADOR	@guarda o tempo do sistema em r0 e fornece ao usuario
 	ldr r0, [r0]
 
 	movs pc, lr
@@ -154,23 +154,22 @@ set_time:
 	push {r1}
 
 	mrs r0, CPSR
-	orr r0, r0, #0b11111
+	orr r0, r0, #0b11111 @acesso ao system
 	msr CPSR, r0
 
 	mov r1, sp
 
 	mrs r0, CPSR
-	and r0, r0, #0b11111111111111111111111111110011
+	and r0, r0, #0b11111111111111111111111111110011	@retorno ao supervisor
 	msr CPSR, r0
 
 	mov r0, r1
 
 	pop {r1}
-	push {r1-r2}
-	ldmia r0, {r1}
+	ldmia r0, {r1}	@desempilha o parametro a ser registrado
 
 	ldr r2,=CONTADOR
-	str r1, [r2]
+	str r1, [r2]		@o tempo atual do sistema vira o desejado pelo usuario
 
 	mov r0, r1
 
@@ -184,13 +183,13 @@ set_alarm:
 	push {r1}
 
 	mrs r0, CPSR
-	orr r0, r0, #0b11111
+	orr r0, r0, #0b11111	@acesso ao system
 	msr CPSR, r0
 
 	mov r1, sp
 
 	mrs r0, CPSR
-	and r0, r0, #0b11111111111111111111111111110011
+	and r0, r0, #0b11111111111111111111111111110011	@retorno ao supervisor apos acesso ao sp do usuario
 	msr CPSR, r0
 
 	mov r0, r1
@@ -203,22 +202,22 @@ set_alarm:
 	mov r1, r2		@r1 e tempo do alarme
 
 	ldr r2,=CONTADOR
-	ldr r2, [r2]
+	ldr r2, [r2]	@r2 agora tem o tempo atual do sistema
 
 	cmp r2, r1
-	movhi r0, #-2
+	movhi r0, #-2	@se o tempo do sistema for menor, retorna erro
 	pophi {r1-r5}
 	bhi return
 
 	ldr r2,=ALARMS
-	ldr r2, [r2]
+	ldr r2, [r2]	@r2 agora tem o num de alarmes
 
-	cmp r2, #MAX_ALARMS
+	cmp r2, #MAX_ALARMS	@caso o num de alarmes for maior que o MAX_ALARMS retorna erro
 	moveq r0, #-1
 	popeq {r1-r5}
 	beq return
 
-	ldr r3, =ALARMS_TIME_BASE
+	ldr r3, =ALARMS_TIME_BASE	@r3 agora e o vetor de tempo em que cada alarme e Acionado
 	mov r4, #0
 
 add_alarm_while:
@@ -238,13 +237,13 @@ add_alarm_while:
 end_alarm_while:
 
 	ldr r2, =ALARMS
-	ldr r3, [r2]
-	add r3, r3, #1
+	ldr r3, [r2]	@r3 e o num de alarmes atual do sistema
+	add r3, r3, #1 @atualiza r3 e atribui a ALARMS
 	str r3, [r2]
 
 	pop {r1-r5}
 
-	mov r0, #0
+	mov r0, #0	@tudo ok
 
 	movs pc, lr
 
@@ -254,13 +253,13 @@ register_proximity_callback:
 	push {r1}
 
 	mrs r0, CPSR
-	orr r0, r0, #0b11111
+	orr r0, r0, #0b11111	@idem anterior
 	msr CPSR, r0
 
 	mov r1, sp
 
 	mrs r0, CPSR
-	and r0, r0, #0b11111111111111111111111111110011
+	and r0, r0, #0b11111111111111111111111111110011  @idem anterior
 	msr CPSR, r0
 
 	mov r0, r1
@@ -275,15 +274,15 @@ register_proximity_callback:
 	mov r2, r3			@r2 e ponteiro da funcao
 
 
-	cmp r0, #15
+	cmp r0, #15		@confere a id do sonar
 	movhi r0, #-2
 	pophi {r1-r4}
 	bhi return
 
-	ldr r3, =CALLBACKS
+	ldr r3, =CALLBACKS	@r3 e o num de callbacks
 	ldr r3, [r3]
 
-	cmp r3, #MAX_CALLBACKS
+	cmp r3, #MAX_CALLBACKS	@ve se ainda e permitido alocar callbacks
 	movhi r0, #-1
 	pophi {r1-r4}
 	bhi return
