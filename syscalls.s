@@ -18,37 +18,39 @@ set_motor_speed:
 	and r0, r0, #0b11111111111111111111111111110011
 	msr CPSR, r0
 
-	mov r0, r1
+		mov r0, r1
 
-	pop {r1}
+		pop {r1}
 
-	push {r1-r2, lr}
-	ldmia r0, {r1-r2}
+		push {r1-r2, lr}
+		ldmia r0, {r1-r2}
 
-	mov r0, r1		@r0 e id
-	mov r1, r2		@r1 e velocidade
+		mov r0, r1		@r0 e id
+		mov r1, r2		@r1 e velocidade
 
 
 
   	cmp r0, #1              @averigua se a id do motor e valida
   	cmpne r0,#0
   	movne r0, #-1
-	popne {r1-r2, lr}
-	bne return
+		popne {r1-r2, lr}
+		bne return
 
   	movmi r1, #-2           @confere se a velocidade e negativa
-	popmi {r1-r2, lr}
-	bmi return
+		popmi {r1-r2, lr}
+		bmi return
 
   	cmp r1, #63             @confere se o valor da velocidade valesse mais que um bit
   	movgt r1, #-2
-	popgt {r1-r2, lr}
-	bgt return
+		popgt {r1-r2, lr}
+		bgt return
 
   	cmp r0, #0		@se a cadeia de lacos rolar a funcao chama o hardware se tudo ok
+		moveq r0, r1
   	bleq write_motor_0
 
   	cmp r0, #1
+		moveq r0, r1
   	bleq write_motor_1	@r0 id e r1 velocidade
 
   	pop {r1-r2, lr}
