@@ -90,6 +90,7 @@ SET_TZIC:
     @instrucao msr - habilita interrupcoes
     msr  CPSR_c, #0x13       @ SUPERVISOR mode, IRQ/FIQ enabled
 
+@Setando o GPIO
 SET_GPIO:
 		.set GPIO_BASE, 0x53F84000 @ DR
 		.set GPIO_GDIR, 0x4
@@ -161,7 +162,7 @@ SET_GPIO:
 		ldr r0, =0x77802000
 		blx r0
 
-
+@Vetor de syscalls
 SVC_HANDLER:
 	cmp r7, #16
 	beq read_sonar
@@ -194,6 +195,10 @@ IRQ_HANDLER:
 		add r0, r0, #1
 		str r0, [r1]
 
+		@Disparando alarmes, se tiver algum
+		@ Usa-se dois vetores em parelelo de oito posições cada
+		@ Um tem o tempo do alarme naquela posição do vetores
+		@ E o outro tem o ponteiro (mesma posição, outro vetor)
 		ldr r4, =ALARMS
 		ldr r6, [r4]
     cmp r6, #0
@@ -207,24 +212,27 @@ IRQ_HANDLER:
         ldr r2, =ALARMS_TIME_BASE
 				ldr r3, [r2, r6, lsl #2]
 
-				cmp r3, r0
-        moveq r3, #0
-        streq r3, [r2, r6, lsl #2]
-        ldreq r3, [r4]
-        addeq r3, r3, #-1
-        streq r3, [r4]
+				cmp r3, r0 @Se o tempo do alarme for igual ao tempo de agora, dispara. Se do alarme é zero, nunca dispara.
+        moveq r3, #0 @A posicao do alarme está liberada se o tempo for 0.
+        streq r3, [r2, r6, lsl #2] @Aqui, estou liberando a posição do alarme usada (colocando o tempo 0)
+        ldreq r3, [r4] @Carrega o numero de alarmes
+        addeq r3, r3, #-1 @Tira um do numero de alarmes
+        streq r3, [r4] @Salva
 
-				bleq call_function_alarms
+				bleq call_function_alarms @Chama o código do usuário
 				add r6, r6, #-1
-				b while_alarms
-        @Lembrar de colocar tempo igual a zero ao inicializar
+				b while_alarms @Volta para verificar os outros alarmes
+
 		end_while_alarms:
 
-
+		@ Verifica se há callbacks
+		@ O mesmo esquema de vetores em paralelo é usado, só que com três dessa vez
     ldr r4, =CALLBACKS
     ldr r6, [r4]
 		add r6, r6, #-1
 
+		@Para cada callback existente, lê-se o sonar da callback, verifica se é menor
+		@Do que o limiar e chama a função do usuário se for
     while_callbacks:
       cmp r6, #0
       blt end_while_callbacks
@@ -251,6 +259,11 @@ call_function_alarms:
 		ldr r7, =ALARMS_FUNCTION_BASE
 		ldr r7, [r7, r6, lsl #2]
 
+		@ Nesse ponto, r7 tem o ponteiro da função do usuário
+		@ O modo é trocado para o system para que o lr atual do usuário seja Salvando
+		@ Coloca-se esse lr na pilha do IRQ. No final de todo o fluxo do set_alarm
+		@ O lr é desempilhado. Assim, se o usuário estivesse no meio de uma função,
+		@ O lr não é perdido e o código funciona normalmente
 		mrs r0, CPSR
 		orr r0, r0, #0b11111
 		msr CPSR, r0
@@ -273,6 +286,8 @@ call_function_alarms:
 		mov pc, r7
 
 end_call_function:
+		@Entre essas três mudanças de modo se recupera o lr do usuário,
+		@Ao fim do fluxo de alarmes e callbacks, como explicado acima
 		mrs r7, CPSR
 		orr r7, r7, #0b11111
 		and r7, r7, #0b11111111111111111111111111110010 @IRQ
@@ -291,10 +306,12 @@ end_call_function:
 		and r7, r7, #0b11111111111111111111111111110010 @IRQ
 		msr CPSR, r7
 
+		@Volta pro IRQ ao fim de um alarme ou callback
 		pop {r0-r7, lr}
 		mov pc, lr
 
 call_function_callbacks:
+		@ Igual ao de alarmes, mais acima
 		push {r0-r7, lr}
 		ldr r7, =CALLBACKS_FUNCTION_BASE
 		ldr r7, [r7, r6, lsl #2]
@@ -320,6 +337,8 @@ call_function_callbacks:
 		mov pc, r7
 
 return_from_function:
+		@ Quando retorna de uma callback ou alarme
+		@ Faz svc para poder voltar ao IRQ
 		mov r7, #23
 		svc 0x0
 
