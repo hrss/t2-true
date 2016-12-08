@@ -125,19 +125,19 @@ read_sonar:
 
 	pop {r1}
 
-	push {r1, lr}
+	push {r1-r2, lr}
 	ldmia r0, {r1}
 
 	mov r0, r1
 
 	cmp r0, #15
 	movhi r0, #-1
-	pophi {r1, lr}
+	pophi {r1-r2, lr}
 	bhi return
 
 	bl read_sonar_with_id
 
-	pop {r1, lr}
+	pop {r1-r2, lr}
 
 	movs pc, lr
 
@@ -166,6 +166,7 @@ set_time:
 	mov r0, r1
 
 	pop {r1}
+	push {r1-r2}
 	ldmia r0, {r1}
 
 	ldr r2,=CONTADOR

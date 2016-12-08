@@ -38,7 +38,7 @@ RESET_HANDLER:
 		mov r0, #0
 		str r0, [r1, #GPT_PR]
 
-		ldr r0, =1000
+		ldr r0, =50000
 		str r0, [r1, #GPT_OCR1]
 
 		mov r0, #1
